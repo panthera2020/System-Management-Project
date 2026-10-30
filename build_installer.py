@@ -1,44 +1,64 @@
-"""Build script for creating a Windows executable using PyInstaller.
+"""Build script for creating a debuggable Windows executable using PyInstaller.
 
-Usage (run from project root)::
-
-    python build_installer.py
-
-The script invokes ``pyinstaller`` to create a single‑file executable named
-``PantherApp.exe`` from the package entry point ``src/panther/main.py``.  After a
-successful build it places the executable in ``dist/`` and prints the path.
+Strict specifications:
+- --onedir
+- --console (console output visible for diagnostics)
+- --noupx (prevents Qt6 DLL corruption)
+- --clean
+- relative paths
 """
 
 import subprocess
 import sys
 from pathlib import Path
+import shutil
 
 def main() -> None:
     project_root = Path(__file__).resolve().parent
-    entry_point = project_root / "src" / "panther" / "main.py"
+    entry_point = project_root / "run_panther.py"
+    
     if not entry_point.is_file():
         sys.exit(f"Entry point not found: {entry_point}")
 
-    # Run PyInstaller
+    # Clean previous build and dist to guarantee fresh compilation
+    build_dir = project_root / "build"
+    dist_dir = project_root / "dist"
+    if build_dir.exists():
+        shutil.rmtree(build_dir, ignore_errors=True)
+    if dist_dir.exists():
+        shutil.rmtree(dist_dir, ignore_errors=True)
+
     cmd = [
         sys.executable,
         "-m",
         "PyInstaller",
-        "--onefile",
-        "--name",
-        "PantherApp",
+        "--noconfirm",
+        "--clean",
+        "--onedir",
+        "--console",
+        "--noupx",
+        "--name", "PantherApp",
+        "--paths", str(project_root / "src"),
+        "--hidden-import", "PySide6.QtCore",
+        "--hidden-import", "PySide6.QtGui",
+        "--hidden-import", "PySide6.QtWidgets",
+        "--hidden-import", "PySide6.QtSvg",
+        "--hidden-import", "PySide6.QtXml",
+        "--hidden-import", "psutil",
+        "--hidden-import", "sqlite3",
         str(entry_point),
     ]
-    print("Running PyInstaller …")
-    result = subprocess.run(cmd, cwd=project_root, capture_output=True, text=True)
-    if result.returncode != 0:
-        sys.exit(f"PyInstaller failed:\n{result.stdout}\n{result.stderr}")
 
-    exe_path = project_root / "dist" / "PantherApp.exe"
-    if exe_path.is_file():
-        print(f"✅ Installer built: {exe_path}")
-    else:
-        sys.exit("Executable not found after build")
+    print("Running PyInstaller with: --onedir --console --noupx --clean ...")
+    result = subprocess.run(cmd, cwd=str(project_root))
+    if result.returncode != 0:
+        sys.exit(f"PyInstaller failed with code {result.returncode}")
+
+    target_exe = dist_dir / "PantherApp" / "PantherApp.exe"
+    if not target_exe.is_file():
+        sys.exit(f"Expected executable not found at: {target_exe}")
+
+    print(f"\n[BUILD SUCCESS] Executable created at: {target_exe}")
 
 if __name__ == "__main__":
     main()

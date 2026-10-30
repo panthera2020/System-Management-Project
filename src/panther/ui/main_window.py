@@ -1,8 +1,7 @@
 """Panther System Intelligence UI – main window.
 
-Provides a QMainWindow with a permanent left‑sidebar navigation list.
-The central widget is a placeholder stacked widget that will host the
-individual screens (Dashboard, Processes, …) once they are implemented.
+Provides a QMainWindow with a permanent left-sidebar navigation list.
+The central widget is a stacked widget that hosts all screens.
 """
 
 from PySide6.QtWidgets import (
@@ -17,6 +16,14 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 
 from .navigation import NAV_ITEMS
+from .dashboard import DashboardScreen
+from .processes import ProcessesScreen
+from .startup import StartupScreen
+from .battery import BatteryScreen
+from .recommendations import RecommendationsScreen
+from .history import HistoryScreen
+from .storage import StorageScreen
+
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
@@ -24,7 +31,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Panther System Intelligence")
         self.resize(1024, 720)
 
-        # ----- layout ----------------------------------------------------
+        # ----- layout --------------------------------------------------------
         central = QWidget()
         self.setCentralWidget(central)
         layout = QHBoxLayout(central)
@@ -39,31 +46,27 @@ class MainWindow(QMainWindow):
 
         # Stacked area for screens
         self.stack = QStackedWidget()
-        # placeholder screens – just a label for now
+
+        _screen_map = {
+            "Dashboard": DashboardScreen,
+            "Processes": ProcessesScreen,
+            "Startup Apps": StartupScreen,
+            "Battery": BatteryScreen,
+            "Recommendations": RecommendationsScreen,
+            "Activity History": HistoryScreen,
+            "Storage": StorageScreen,
+        }
+
         for name, _icon in NAV_ITEMS:
-            if name == "Dashboard":
-                from ..dashboard import DashboardScreen
-                widget = DashboardScreen()
-            elif name == "Startup Apps":
-                from ..ui.startup import StartupScreen
-                widget = StartupScreen()
-            elif name == "Battery":
-                from ..ui.battery import BatteryScreen
-                widget = BatteryScreen()
-            elif name == "Recommendations":
-                from ..ui.recommendations import RecommendationsScreen
-                widget = RecommendationsScreen()
-            elif name == "Activity History":
-                from ..ui.history import HistoryScreen
-                widget = HistoryScreen()
-            elif name == "Storage":
-                from ..ui.storage import StorageScreen
-                widget = StorageScreen()
+            cls = _screen_map.get(name)
+            if cls is not None:
+                widget = cls()
             else:
-                placeholder = QLabel(f"{name} screen – not implemented yet")
+                placeholder = QLabel(f"{name} screen – coming soon")
                 placeholder.setAlignment(Qt.AlignCenter)
                 widget = placeholder
             self.stack.addWidget(widget)
+
         layout.addWidget(self.stack)
 
         # Connect navigation

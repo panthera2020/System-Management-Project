@@ -61,4 +61,4 @@ class Database:
             conn.commit()
 
 # Export a singleton for convenient import
- db = Database()
+db = Database()

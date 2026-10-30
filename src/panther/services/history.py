@@ -7,7 +7,7 @@ All interactions go through the shared `Database` singleton defined in `panther.
 import datetime
 from typing import List, Tuple, Any
 
-from .db import db
+from ..db import db
 
 TABLE_NAME = "history"
 

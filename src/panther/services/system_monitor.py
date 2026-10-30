@@ -22,8 +22,8 @@ def get_ram_usage() -> Dict[str, Any]:
         "percent": vm.percent,
     }
 
-def get_disk_usage(path: str = "/") -> Dict[str, Any]:
-    """Return disk usage statistics for *path* (default=root)."""
+def get_disk_usage(path: str = "C:\\") -> Dict[str, Any]:
+    """Return disk usage statistics for *path* (default=C:\\ on Windows)."""
     du = psutil.disk_usage(path)
     return {
         "total": du.total,
@@ -46,4 +46,3 @@ def get_battery_info() -> Dict[str, Any]:
         "secsleft": batt.secsleft,
         "power_plugged": batt.power_plugged,
     }
-```
