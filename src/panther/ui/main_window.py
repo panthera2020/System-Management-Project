@@ -47,6 +47,18 @@ class MainWindow(QMainWindow):
             elif name == "Startup Apps":
                 from ..ui.startup import StartupScreen
                 widget = StartupScreen()
+            elif name == "Battery":
+                from ..ui.battery import BatteryScreen
+                widget = BatteryScreen()
+            elif name == "Recommendations":
+                from ..ui.recommendations import RecommendationsScreen
+                widget = RecommendationsScreen()
+            elif name == "Activity History":
+                from ..ui.history import HistoryScreen
+                widget = HistoryScreen()
+            elif name == "Storage":
+                from ..ui.storage import StorageScreen
+                widget = StorageScreen()
             else:
                 placeholder = QLabel(f"{name} screen – not implemented yet")
                 placeholder.setAlignment(Qt.AlignCenter)
