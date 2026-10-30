@@ -1,0 +1,493 @@
+﻿PANTHER SYSTEM INTELLIGENCE
+PRODUCT REQUIREMENTS DOCUMENT
+Windows desktop system monitoring, storage intelligence and safe optimization
+Document field
+Value
+Version
+1.0
+Status
+Development specification
+Primary platform
+Windows 11; Windows 10 compatibility where feasible
+Proposed stack
+Python, PySide6, Windows APIs, SQLite
+Development approach
+Modular architecture with test-driven development
+Product principle
+Complex functionality, simple interaction
+Product vision: Give users a clear, trustworthy understanding of what is using their PC resources, why it matters, what depends on it, and what they can safely do about it.
+1. Executive Summary
+Panther System Intelligence is a Windows desktop application for understanding and managing computer resource consumption. It combines process and RAM monitoring, storage analysis, duplicate detection, battery and power insights, startup management, application information, recommendations and activity history.
+The product is not simply a task manager or disk cleaner. Its distinguishing feature is contextual intelligence: it explains the purpose and importance of processes and files, identifies dependencies where possible, communicates uncertainty, and helps users make informed decisions without putting Windows or personal data at unnecessary risk.
+2. Product Vision and Goals
+2.1 Vision
+Create an approachable system-management application that turns complex Windows information into understandable, actionable guidance.
+2.2 Goals
+Give users real-time visibility into RAM, CPU, storage, battery and background activity.
+Explain running processes, their publishers, locations, dependencies and risk of termination.
+Help users locate large files, exact duplicates and storage growth.
+Explain file purpose and deletion risk without assuming that old or unfamiliar files are unnecessary.
+Show battery health and power information available through supported Windows interfaces.
+Provide safe, evidence-based recommendations and reversible actions where possible.
+Keep user system information local by default.
+Make every component understandable, accessible and covered by appropriate automated tests.
+2.3 Non-goals for the first release
+Replacing Windows Security or acting as antivirus software.
+Guaranteeing that every process or file can be classified.
+Claiming exact per-process battery wattage when Windows does not expose it.
+Automatically deleting files, terminating processes or changing services without user approval.
+Replacing Windows Settings or every specialist diagnostic utility.
+3. Target Users
+Everyday Windows users who want to understand why their PC feels slow.
+Users with limited RAM or storage capacity.
+Laptop users interested in battery runtime and background activity.
+Developers and technical users who want deeper process and file information.
+Users who want controlled, transparent system maintenance.
+4. Product Principles
+Clarity first: use plain language, explain technical terms and avoid unexplained metrics.
+Safety first: uncertainty must never be presented as permission to perform a destructive action.
+Evidence over assumptions: classifications and recommendations must show their supporting evidence.
+User control: no destructive action runs without explicit confirmation.
+Least privilege: run without administrator rights by default and elevate only for a specific operation when necessary.
+Local-first privacy: do not upload process names, file paths or personal system information by default.
+Test as you build: every component must have appropriate tests before it is considered complete.
+5. Scope and Core Modules
+5.1 System Dashboard
+Purpose: provide an immediate, understandable overview of the PC.
+Show RAM used/available/total, percentage and status.
+Show CPU utilization and a short recent history.
+Show disk capacity, used space and free space for selected volumes.
+Show battery charge, charging state and supported battery-health information.
+Show GPU utilization only where reliable hardware/driver interfaces provide it.
+Show system status summaries such as high memory pressure or low disk space.
+Provide links from alerts to the relevant detail screen.
+Allow configurable monitoring intervals and historical retention.
+Acceptance criteria: values originate from actual system interfaces; units and timestamps are visible; unsupported metrics are labelled unavailable; monitoring overhead is measured and kept low.
+5.2 Process and RAM Manager
+Purpose: list running processes and help users understand resource use and termination risk.
+List process name, PID, parent PID, executable path, publisher/signature status where available, user/session, RAM, CPU, disk and network activity where supported.
+Show process tree and parent/child relationships.
+Associate processes with applications and Windows services where possible.
+Show process start time and relevant metadata where available.
+Search, filter and sort by name, RAM, CPU, publisher, type and risk.
+Support graceful application close before force termination.
+Record user-initiated actions and their outcomes.
+Process importance and risk classification
+Classification
+Meaning
+Default action
+Critical system component
+Windows security, session or core operating-system functionality may depend on it.
+Block ordinary termination controls; explain why.
+Important Windows service
+Supports operating-system or device functionality; risk depends on service and context.
+Warn strongly; restrict or require elevated confirmation.
+Application dependency
+Another application or service may rely on it.
+Show dependency evidence and consequences.
+User application
+Recognized interactive application.
+Allow graceful close with confirmation as appropriate.
+Background application
+Runs without a prominent foreground window; may still provide useful features.
+Explain role and offer app-specific controls where safe.
+Unknown / unverified
+Evidence is insufficient or conflicting.
+Do not infer safety; show uncertainty and avoid one-click termination.
+Classification must not rely on process name alone. Consider executable path, digital signature and publisher, service association, parent-child relationships, known metadata, operating-system version and other available evidence. A valid signature does not prove that software is harmless; an unsigned executable is not automatically malicious.
+Each classification must expose category, risk, confidence, evidence, timestamp and explanation. Keep importance (how essential it is) distinct from risk (what could happen if stopped).
+Process actions and safety
+Never offer a routine 'kill everything unnecessary' action.
+Prefer graceful close; make force termination a separate advanced action.
+Require explicit confirmation for termination and explain potential data loss.
+Protect known critical processes and services from ordinary termination workflows.
+Handle access denied, protected processes, PID reuse and processes that exit during inspection.
+Do not automatically stop services based on generic resource thresholds.
+Acceptance criteria: process rows have stable identity for the current snapshot; metrics refresh reliably; unknown classifications remain uncertain; termination tests verify allowed and blocked cases; errors are understandable.
+5.3 Smart Storage and File Manager
+Purpose: show where storage is used and help users inspect files safely.
+Show volume capacity, used and free space, folder sizes, largest files and file-type distribution.
+Browse files and folders with familiar navigation.
+Display file name, path, extension/type, size, timestamps, owner/permissions where available, associated application where known, signature metadata where relevant, duplicate status and classification.
+Support filters by size, type, location and modified date.
+Show scan progress, cancellation and permission errors.
+Support incremental or resumable scanning where practical.
+File importance classification
+Category
+Meaning
+Default handling
+Windows/system file
+Potentially required by Windows or a driver.
+Protected from cleanup workflows.
+Application dependency
+Potentially required by installed software.
+Do not suggest deletion without validated application-specific context.
+User personal file
+Documents, photos, videos, projects and other user data.
+Treat as valuable; never auto-delete.
+Application data
+Settings, databases, caches and app-generated data.
+Explain owner and likely effect; require review.
+Temporary / cache candidate
+Potentially recreatable data in a known location.
+Eligible for review only after validation.
+Exact duplicate
+Content matches another file based on cryptographic hash and size verification.
+Show every location; user selects what to retain.
+Unknown
+Purpose cannot be reliably determined.
+Treat as potentially important.
+Age, last-access time, file name or directory alone must never determine that a file is safe to delete. Some Windows access timestamps may be disabled, delayed or unreliable.
+Duplicate detection
+Use file size as a preliminary grouping filter.
+Use a cryptographic hash to identify candidate exact matches.
+Verify equality where necessary before labelling as exact duplicates.
+Distinguish exact duplicates from similar names, similar images or near-duplicates.
+Show all paths, sizes, timestamps and total potential space savings.
+Do not automatically remove any copy.
+Cleanup and recovery
+Default to moving selected files to the Recycle Bin where supported.
+Permanent deletion requires a separate explicit action and confirmation.
+Exclude protected locations and unknown files from automatic cleanup.
+Show exact selected paths and expected reclaimed space before action.
+Handle locked files, permissions, symbolic links, junctions and scan races safely.
+Record the operation and outcome. Do not claim an operation is reversible when it is not.
+Acceptance criteria: file sizes match filesystem metadata; duplicate results are content-verified; protected locations are respected; cleanup is opt-in; cancellation and partial failures are handled; reclaimed-space estimates are clearly estimates.
+5.4 Battery and Power Intelligence
+Purpose: explain battery condition and identify applications contributing to system workload and power use.
+Show charge percentage, charging/discharging state and estimated runtime when supplied by Windows.
+Show design capacity and full-charge capacity when available; derive a clearly labelled health estimate only when data is reliable.
+Collect supported system power information and available Windows application power attribution.
+Correlate process CPU, disk, network and background activity with observed system discharge trends.
+Show high, moderate or low estimated impact only when sufficient evidence exists.
+Label measured values, Windows-provided estimates and application-derived estimates distinctly.
+Important limitation: Windows does not provide a universally accurate direct wattage measurement for every process. Do not display fabricated per-process watts or claim exact battery drain attribution. Present confidence and methodology, and explain that correlation is not proof of causation.
+Acceptance criteria: unsupported battery fields are omitted or labelled unavailable; estimates are explicitly identified; battery history includes sampling context; monitoring overhead is tested.
+5.5 Startup and Background Manager
+Inspect supported startup folders, registry Run entries, scheduled tasks and services.
+Show name, publisher, executable path, source, associated application and available startup impact evidence.
+Distinguish disabling a startup entry from uninstalling an application or stopping a service.
+Allow supported startup entries to be enabled or disabled with confirmation and audit history.
+Provide a clear undo path where the underlying mechanism supports it.
+Do not disable services automatically.
+5.6 Application and Dependency Manager
+List installed applications from supported Windows installation and package records.
+Show publisher, version, install location/date and size when reliably measurable.
+Link applications to known processes, services, startup entries and application data where evidence supports the association.
+Open Windows Settings or the registered uninstaller for removal.
+Do not manually delete application folders as a substitute for proper uninstall.
+5.7 Recommendation Engine
+Generate recommendations from evidence collected by other modules. Each recommendation must include: issue, evidence, why it matters, possible benefit, potential risk, suggested action, confidence and links to relevant details.
+Rank recommendations by likely impact, confidence and safety.
+Do not use arbitrary 'optimization' scores.
+Never automatically execute destructive recommendations.
+Allow dismissal and avoid repeating unchanged dismissed recommendations.
+Distinguish observed facts from estimates and general guidance.
+5.8 History and Activity
+Store resource trends, battery trends, storage snapshots, scan results and user actions.
+Provide last hour, 24 hours, 7 days and 30 days views where data exists.
+Allow export of reports without including sensitive paths by default.
+Provide configurable retention and database size controls.
+Record action time, target, requested operation, result and error.
+6. User Experience and Interface Requirements
+6.1 UX philosophy
+The product must be understandable to a first-time, non-technical Windows user. Complex work happens behind the scenes; the interface uses simple language, clear hierarchy and predictable interactions. If a user needs a developer to explain what a button or metric does, the component has failed usability review.
+6.2 Navigation
+Use a consistent left sidebar with: Dashboard, Processes, Storage, Battery, Startup Apps, Applications, Recommendations, Activity History and Settings.
+Each item has a recognizable icon and a short label; icons must never be the only source of meaning.
+Keep primary destinations visible and avoid deep nested navigation.
+Provide breadcrumbs or clear back navigation for deeper screens.
+Preserve sensible filters and selection when moving between detail views.
+6.3 Dashboard layout
+Use clear cards for RAM, CPU, Storage and Battery.
+Each card shows current value, unit, capacity where relevant, percentage where meaningful, status and a 'View details' action.
+Show a concise system summary and no more than three high-priority recommendations on the dashboard.
+Alerts link directly to the screen where the user can understand the issue.
+Do not overload the first screen with raw process tables or advanced metrics.
+6.4 Tables and detail panels
+Use searchable, sortable tables with sensible default columns.
+Allow users to choose optional columns without overwhelming the default view.
+Selecting a row opens a consistent details panel or detail page.
+Explain technical terms using short descriptions or tooltips.
+Show units beside numbers and clarify whether values are current, averaged or estimated.
+Support empty, loading, refreshing, partial-data and error states.
+6.5 Plain-language examples
+Technical term
+User-facing explanation
+RAM
+Temporary memory used by Windows and open applications.
+CPU
+The processor that performs the computer's work.
+Background process
+A program or service running without an open window.
+Dependency
+Another component this program may need to work.
+Digital signature
+Information that helps verify who published a program and whether it was altered.
+Estimated power impact
+An estimate based on available activity data, not an exact battery measurement.
+6.6 Actions and confirmations
+Use specific labels such as 'Close application', 'Move 5 files to Recycle Bin' or 'Disable startup entry'.
+Do not use vague labels such as 'Proceed' or 'Optimize' for destructive operations.
+Confirmation dialogs identify exactly what will change, affected items, likely consequences and reversibility.
+Use graceful close before force termination.
+Provide success, partial success and failure feedback.
+6.7 Visual design system
+Use a modern, calm Windows desktop visual language.
+Define reusable typography, spacing, colors, icons, cards, tables, buttons, inputs, dialogs and notification styles before implementing screens.
+Support dark and light themes.
+Use restrained color: status color is supplementary, never the only indicator.
+Avoid dense dashboards, unnecessary animation, decorative gauges and unexplained jargon.
+Maintain consistent alignment, component behavior and visual hierarchy across all screens.
+6.8 Accessibility
+Support keyboard navigation and visible focus states.
+Use readable typography and sufficient contrast.
+Provide accessible names for controls and screen-reader descriptions.
+Do not communicate risk using color alone; include text and/or icons.
+Support sensible scaling and resizable windows.
+6.9 Usability acceptance criteria
+A first-time user can explain the dashboard's main metrics after a short, unassisted review.
+All primary features are reachable through clearly labelled navigation.
+Users can explain why a process or file received its displayed classification.
+Users can distinguish facts, estimates and unknown information.
+Every destructive action clearly identifies its target and consequence.
+Common tasks can be completed without developer assistance in usability tests.
+UI components have tests for behavior, state and accessibility-relevant semantics.
+7. Technical Architecture
+7.1 Proposed stack
+Layer
+Proposed technology / approach
+Desktop UI
+Python + PySide6
+System metrics
+psutil where appropriate plus native Windows APIs
+Windows integration
+Documented Windows APIs; WMI only where suitable; Power APIs and service/task interfaces
+Persistence
+SQLite with a repository/data-access layer
+Data models
+Typed Python models and explicit validation
+Testing
+pytest, pytest-mock, unittest.mock and Windows integration tests
+Packaging
+Windows installer/package with signed release artifacts when distribution begins
+The final stack must be validated with small technical spikes before committing to APIs that may be unsupported or restricted on target Windows versions.
+7.2 Architecture layers
+Presentation layer: PySide6 screens and reusable widgets. No direct privileged OS operations.
+Application/service layer: use cases, orchestration, validation and action workflows.
+Domain/intelligence layer: process/file classifications, dependency reasoning, risk and recommendation rules.
+System integration layer: adapters around Windows APIs, filesystem and process operations.
+Persistence layer: repositories and SQLite models.
+Testing layer: unit, component, integration, system and end-to-end tests.
+7.3 Key architectural rules
+UI must not call privileged Windows APIs directly.
+Wrap external OS interfaces behind injectable adapters.
+Use asynchronous workers or background tasks for scans and monitoring; never block the UI thread.
+Use cancellation, timeouts and bounded resource usage.
+Validate all paths and process identifiers immediately before destructive actions.
+Use structured logging without unnecessarily recording sensitive file paths.
+Keep classification rules versioned and auditable.
+Do not require cloud connectivity for core functionality.
+8. Intelligence and Knowledge Base
+Maintain a versioned local knowledge base of known Windows components, services, common application metadata, protected paths and classification evidence. Updates may be delivered separately, but core operation must not require a cloud connection.
+Use process path, publisher/signature, service association, parent-child relationships and known metadata together.
+Use file path, signature, metadata, known application ownership and protected-location rules together.
+Treat names and locations as clues, not proof.
+Show evidence sources, confidence, knowledge-base version and last-updated time.
+Resolve conflicting evidence conservatively.
+Do not label a process or file as malware solely because it is unknown or unsigned.
+Do not claim a dependency relationship unless it is observed or supported by reliable metadata.
+9. Data and Privacy
+Store system inventory and history locally by default.
+Do not transmit file names, paths, process lists or user activity without explicit consent.
+Provide clear controls for retention, export and deletion of local history.
+Exclude sensitive paths from exported reports by default or provide a preview.
+Protect database files using normal user-profile permissions.
+Document what is collected, why it is collected and where it is stored.
+10. Non-functional Requirements
+Area
+Requirement
+Performance
+Monitoring overhead must be measured; scans must not freeze the UI; use bounded concurrency and incremental scanning.
+Reliability
+Handle process exits, access-denied errors, locked files, unavailable metrics and interrupted scans without crashing.
+Security
+Least privilege, explicit elevation, input validation, safe defaults and auditable destructive actions.
+Compatibility
+Detect Windows version and capability differences; gracefully disable unsupported features.
+Maintainability
+Small cohesive modules, documented interfaces, type hints and consistent error handling.
+Privacy
+Local-first; no silent telemetry or upload of personal system information.
+Usability
+Plain language, consistent components, accessible navigation and clear feedback.
+11. Testing Strategy — Mandatory
+Testing is part of implementation, not a final phase. Every component created must have tests appropriate to its responsibility. A component is not complete until its tests pass and its behavior has been reviewed.
+11.1 Test levels
+Unit tests: calculations, classification rules, validation, scoring and business logic.
+UI/component tests: rendering, labels, signals, state transitions, keyboard behavior, empty/loading/error states.
+Integration tests: service-to-adapter, repository-to-database and cross-module behavior.
+Windows system tests: actual process enumeration, permissions, filesystem behavior, battery interfaces and startup mechanisms on supported Windows versions.
+End-to-end tests: complete user workflows from UI action to verified system result.
+Regression tests: run relevant suite for every change and full suite before release.
+11.2 Component test inventory
+Component
+Minimum relevant test coverage
+Configuration and logging
+Unit, integration
+Database models and migrations
+Unit, integration
+Repositories
+Unit, integration
+System/RAM/CPU/disk monitors
+Unit, adapter integration, Windows system
+Process scanner and process tree
+Unit, integration, Windows system
+Process classifier and risk rules
+Unit, rule coverage, regression
+Dependency analyzer
+Unit, integration
+Process action manager
+Unit with mocks, permission tests, controlled Windows system tests
+File scanner and metadata reader
+Unit, integration, filesystem tests
+File classifier
+Unit, regression
+Duplicate detector
+Unit, integration with known fixture files
+Storage analyzer
+Unit, integration
+Cleanup manager
+Unit with mocks, sandbox filesystem tests, recovery/error tests
+Battery monitor and power analyzer
+Unit, integration, supported-device tests
+Startup manager
+Unit, integration, controlled Windows system tests
+Application inventory/dependency manager
+Unit, integration
+Recommendation engine
+Unit, evidence and confidence tests
+History and reporting
+Unit, integration, export tests
+Every UI widget and screen
+Component tests, interaction tests, accessibility checks
+Navigation and user workflows
+End-to-end tests
+Permission and security layer
+Unit, integration, negative/abuse-case tests
+11.3 Mandatory test rules
+Write tests before or alongside implementation.
+Every class and public behavior must have meaningful tests; trivial data-only structures may be covered through their validation and usage tests.
+Test normal behavior, boundary cases, invalid input and expected failures.
+Mock external Windows APIs in unit tests; also run real integration tests on Windows.
+Use temporary directories, fixture files and disposable test processes; never run destructive tests against personal data or critical system processes.
+Test permission-denied, locked-file, missing-file, process-exited and unsupported-feature cases.
+Test that protected resources cannot be acted upon through ordinary destructive workflows.
+Test that estimates and unknown classifications are labelled accurately.
+Do not use coverage percentage as a substitute for assertions about safety and correctness.
+Update the test inventory whenever a component is added or changed.
+11.4 Coverage targets
+Area
+Target
+Core business logic
+95% line coverage target
+Classification and safety rules
+95% line coverage plus explicit test for every safety rule
+Repositories and data services
+90% line coverage target
+Application services
+90% line coverage target
+UI
+Meaningful interaction and state coverage; prioritize user-critical flows
+Destructive-operation safety rules
+100% of defined rules covered by explicit tests
+Coverage targets are quality indicators, not proof of correctness. Critical safety rules require direct assertions and negative tests.
+12. MVP and Release Scope
+12.1 MVP
+Application shell, navigation and design system.
+System dashboard with RAM, CPU, storage and supported battery readings.
+Process list with search, sorting, detail view and conservative classification.
+Safe graceful close for recognized user applications; restricted process handling.
+Storage overview, largest files and exact duplicate detection.
+File importance/risk explanations and safe Recycle Bin workflow.
+Battery overview with honest power-impact estimates.
+Local history and structured logging.
+Automated tests for every implemented component and workflow.
+12.2 Later releases
+Expanded dependency mapping and application ownership analysis.
+Advanced startup and service management.
+More detailed historical analytics and export.
+Expanded application inventory and uninstall handoff.
+Improved knowledge-base updates and confidence calibration.
+Optional advanced views for technical users.
+13. Delivery Phases
+Phase
+Deliverables
+Exit condition
+1. Foundation
+Project structure, configuration, logging, database, design system, test setup
+App launches; DB and test pipeline work
+2. Monitoring
+RAM, CPU, disk, process inventory, dashboard
+Accurate metrics; acceptable overhead; tests pass
+3. Process intelligence
+Classification, dependencies, process details and safe actions
+Conservative classification and verified action safeguards
+4. Storage intelligence
+File scanner, metadata, large files, exact duplicates, cleanup
+Sandbox tests pass; no unsafe automatic deletion
+5. Battery intelligence
+Battery metrics, activity collection, estimates
+Measurement/estimate distinctions validated
+6. Management and recommendations
+Startup, application inventory, recommendation engine
+Actions are explainable, controlled and reversible where possible
+7. History and reporting
+Trends, activity logs, exports
+Retention and privacy requirements pass
+8. Release QA
+Compatibility, security, performance, usability and regression
+Release checklist completed
+14. Success Metrics
+Accuracy and consistency of resource readings against Windows tools.
+Precision of exact duplicate detection using test fixtures.
+Rate of correct and explainable process/file classifications.
+Number of false-safe classifications (a key safety metric to minimize).
+Monitoring CPU and memory overhead.
+Scan responsiveness and cancellation reliability.
+Battery estimate calibration and clear uncertainty communication.
+Crash-free sessions and recovery from expected OS errors.
+Automated test pass rate and regression rate.
+Successful completion of common tasks in usability testing.
+15. Definition of Done
+A feature is complete only when all applicable conditions below are met:
+Implementation matches the agreed requirement and has a clear owner/interface.
+Unit tests cover business logic, normal paths, edge cases and errors.
+Integration tests cover relevant dependencies and system adapters.
+UI components have behavior, state and accessibility-relevant tests.
+Windows-specific behavior has been validated on a real supported Windows environment when applicable.
+Security, permission and destructive-action implications have been reviewed.
+Loading, empty, success, partial-success and failure states are understandable.
+Documentation and the component test inventory are updated.
+All relevant automated tests pass and no known critical regression remains.
+16. Risks and Mitigations
+Risk
+Mitigation
+Incorrect process importance classification
+Multiple evidence sources, confidence display, conservative unknown state, versioned rules and regression fixtures.
+Accidental termination or deletion
+Least privilege, protected-resource rules, explicit confirmation, sandbox tests and reversible actions where possible.
+Misleading battery attribution
+Clearly separate measured, Windows-attributed and estimated information; never fabricate per-process watts.
+Windows API differences
+Capability detection, version-aware adapters and graceful unsupported states.
+High scan overhead
+Incremental scanning, cancellation, bounded concurrency, caching and performance tests.
+False duplicate results
+Cryptographic hashing and content verification; never equate similar names with exact duplicates.
+Confusing interface
+Plain-language labels, consistent design system, tooltips, usability tests and limited dashboard density.
+17. Final Product Direction
+Panther System Intelligence should be an explainable system observability and management platform for Windows. It must not encourage indiscriminate killing of processes or deletion of files. It should help users understand what is happening, why it is happening, what evidence supports the diagnosis and which safe actions are available.
+The defining promise: Don't just show what consumes resources. Explain what it is, why it matters, what depends on it, how it affects the PC, and what the user can safely do next.
+The defining engineering rule: every component created must be accompanied by meaningful tests. Untested components are unfinished components.
