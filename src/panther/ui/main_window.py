@@ -44,6 +44,9 @@ class MainWindow(QMainWindow):
             if name == "Dashboard":
                 from ..dashboard import DashboardScreen
                 widget = DashboardScreen()
+            elif name == "Startup Apps":
+                from ..ui.startup import StartupScreen
+                widget = StartupScreen()
             else:
                 placeholder = QLabel(f"{name} screen – not implemented yet")
                 placeholder.setAlignment(Qt.AlignCenter)
