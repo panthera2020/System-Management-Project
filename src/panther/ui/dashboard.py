@@ -26,6 +26,9 @@ class DashboardScreen(QWidget):
             QWidget {
                 background-color: #f7f9fc;
             }
+            QLabel {
+                background-color: transparent;
+            }
             QFrame#card {
                 background-color: #ffffff;
                 border-radius: 12px;

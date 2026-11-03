@@ -106,9 +106,19 @@ class DuplicateDetector:
             return []
 
         size_groups = defaultdict(list)
+        seen_identities = set()
         for record in files:
-            if record.get("size", 0) > 0:
-                size_groups[record["size"]].append(record)
+            if record.get("size", 0) <= 0:
+                continue
+            # Hardlinks are extra names for one on-disk file, not extra
+            # copies: removing one frees no space, so count the file once.
+            inode = record.get("inode")
+            if inode:
+                identity = (record.get("device"), inode)
+                if identity in seen_identities:
+                    continue
+                seen_identities.add(identity)
+            size_groups[record["size"]].append(record)
 
         candidate_groups = [
             (size, group)

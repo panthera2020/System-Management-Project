@@ -210,6 +210,10 @@ class FileScanner:
                     else None
                 ),
                 "is_file": True,
+                # Filesystem identity, so hardlinks (several names for one
+                # on-disk file) can be told apart from real copies.
+                "device": stat_result.st_dev,
+                "inode": stat_result.st_ino,
             }
         )
         self._files_scanned += 1

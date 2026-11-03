@@ -47,6 +47,7 @@ def main() -> None:
         "--hidden-import", "psutil",
         "--hidden-import", "send2trash",
         "--hidden-import", "sqlite3",
+        "--hidden-import", "send2trash",
         str(entry_point),
     ]
 
