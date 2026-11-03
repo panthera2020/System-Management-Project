@@ -5,6 +5,11 @@
 **Status:** Stage 3 implementation complete and published for the Linux-verifiable scope.
 **Audit date:** November 2026
 
+> **Update (post-merge):** Stage 3 is merged into `main` (`e5b258a`). Section D's
+> "known unrelated failure" and section F item 1 are resolved. See
+> `handoff_phase_17.md` in the repository root for the current state, test count and
+> open items.
+
 This document is the authoritative handover for Stage 3. It is written so that a new
 developer and their coding agent can understand, verify, and safely continue the work
 without access to the original conversation.
