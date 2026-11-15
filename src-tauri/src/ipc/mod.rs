@@ -43,7 +43,11 @@ struct JsonRpcError {
 #[derive(Debug)]
 pub enum SidecarError {
     Transport(String),
-    MethodError { code: i64, message: String, data: Option<Value> },
+    MethodError {
+        code: i64,
+        message: String,
+        data: Option<Value>,
+    },
     Timeout,
     NotRunning,
     InvalidResponse(String),
@@ -53,8 +57,15 @@ impl std::fmt::Display for SidecarError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SidecarError::Transport(s) => write!(f, "sidecar transport error: {s}"),
-            SidecarError::MethodError { code, message, data } => {
-                write!(f, "sidecar returned error {code}: {message} (data: {data:?})")
+            SidecarError::MethodError {
+                code,
+                message,
+                data,
+            } => {
+                write!(
+                    f,
+                    "sidecar returned error {code}: {message} (data: {data:?})"
+                )
             }
             SidecarError::Timeout => write!(f, "request timed out"),
             SidecarError::NotRunning => write!(f, "sidecar not running"),
@@ -93,10 +104,8 @@ impl IpcState {
     ) {
         let id = uuid::Uuid::new_v4().to_string();
         let (tx, rx) = tokio::sync::oneshot::channel();
-        self.pending.insert(
-            id.clone(),
-            PendingRequest { responder: tx },
-        );
+        self.pending
+            .insert(id.clone(), PendingRequest { responder: tx });
         (id, rx)
     }
 
@@ -135,8 +144,7 @@ pub type AppState = Arc<Mutex<IpcState>>;
 /// so it cannot `.await`, and `blocking_lock()` would panic if `setup` ever ran
 /// inside a runtime context. The critical section is a single move of a
 /// short-lived handle, so no `.await` is ever held while the lock is held.
-pub type SidecarRef =
-    Arc<std::sync::Mutex<Option<crate::ipc::transport::SidecarHandle>>>;
+pub type SidecarRef = Arc<std::sync::Mutex<Option<crate::ipc::transport::SidecarHandle>>>;
 
 pub mod transport;
 

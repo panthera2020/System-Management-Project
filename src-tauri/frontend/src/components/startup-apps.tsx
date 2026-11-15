@@ -13,7 +13,6 @@ import {
   DataTable,
   ColumnDef,
   Button,
-  Toggle,
   Card,
 } from "../components/shared";
 
@@ -29,7 +28,6 @@ export function StartupApps() {
   const [data, setData] = useState<StartupApp[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
 
   const fetchStartupApps = useCallback(async () => {
@@ -51,32 +49,6 @@ export function StartupApps() {
   useEffect(() => {
     fetchStartupApps();
   }, [fetchStartupApps]);
-
-  const handleToggle = async (executable: string, newState: boolean) => {
-    // Optimistic update
-    setData((prev) =>
-      prev.map((app) =>
-        app.executable === executable ? { ...app, isEnabled: newState } : app
-      )
-    );
-    setActionError(null);
-    try {
-      await invokeMetric({
-        method: "system_monitor.set_startup_app_state",
-        params: { executable, enabled: newState },
-      });
-    } catch (err) {
-      // Revert on error
-      setData((prev) =>
-        prev.map((app) =>
-          app.executable === executable ? { ...app, isEnabled: !newState } : app
-        )
-      );
-      const message = err instanceof Error ? err.message : "Failed to update startup app";
-      setActionError(message);
-      console.error("Failed to update startup app:", err);
-    }
-  };
 
   const getImpactLevel = (value: number | null): "normal" | "warning" | "critical" => {
     if (value === null) return "normal";
@@ -117,17 +89,6 @@ export function StartupApps() {
           </span>
         );
       },
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      width: "120px",
-      render: (row) => (
-        <Toggle
-          checked={row.isEnabled}
-          onChange={(e) => handleToggle(row.executable, e.target.checked)}
-        />
-      ),
     },
   ];
 
@@ -179,15 +140,12 @@ export function StartupApps() {
         <span className="text-sm text-slate-500 dark:text-slate-400">
           {enabledCount} of {data.length} enabled
         </span>
-        {actionError && (
-          <span className="ml-4 text-sm text-critical flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-            {actionError}
-          </span>
-        )}
+        <span className="ml-4 text-sm text-slate-500 dark:text-slate-400">
+          Read-only: startup changes are unavailable because the original registry value is not backed up, so a change could not be safely reversed.
+        </span>
       </Toolbar>
 
-      <SectionCard title="Startup Applications" subtitle="Manage which applications launch automatically">
+      <SectionCard title="Startup Applications" subtitle="Applications registered to launch automatically (read-only)">
         <DataTable
           columns={columns}
           data={tableData}

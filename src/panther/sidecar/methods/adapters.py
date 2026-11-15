@@ -228,27 +228,17 @@ def get_startup_apps() -> List[Dict[str, Any]]:
 
 
 def set_startup_app_state(executable: str, enabled: bool) -> None:
-    """Enable or disable a startup entry."""
-    if enabled:
-        # Enabling is unsupported on every platform, so report that honestly
-        # before validating the entry. Disabling deletes the registry value,
-        # so an entry that was just disabled is no longer listed and a later
-        # lookup would otherwise produce a misleading "not found" error.
-        raise NotImplementedError(
-            "Enabling startup entries is not implemented. "
-            "Callers should store the command before deletion."
-        )
+    """Startup state changes are unavailable: management is read-only.
 
-    entries = startup_adapter.get_startup_entries()
-    target = None
-    for entry in entries:
-        if entry.get("command") == executable or entry.get("name") == executable:
-            target = entry
-            break
-    if not target:
-        raise ValueError(f"Startup entry not found: {executable}")
-
-    startup_adapter.set_entry_enabled(target["name"], target["scope"], False)
+    Disabling a startup entry deletes its registry value, and the exact original
+    value and location are not preserved, so the change cannot be reliably
+    reversed. The method stays registered so callers get an explicit, honest
+    error instead of "method not found", and it never touches the registry.
+    """
+    raise NotImplementedError(
+        "Startup application changes are unavailable: the original registry "
+        "value is not backed up, so a change could not be safely reversed."
+    )
 
 
 # ---------------------------------------------------------------------------

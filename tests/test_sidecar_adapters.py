@@ -252,34 +252,14 @@ def test_get_startup_apps_maps_fields(mock_get_entries):
     assert app["memoryImpact"] is None
 
 
-@patch("panther.sidecar.methods.adapters.startup_adapter.get_startup_entries")
+@pytest.mark.parametrize("enabled", [True, False])
 @patch("panther.sidecar.methods.adapters.startup_adapter.set_entry_enabled")
-def test_set_startup_app_state_disables(mock_set_enabled, mock_get_entries):
-    mock_get_entries.return_value = [
-        {"name": "TestApp", "command": "C:\\Test\\app.exe", "scope": "HKCU", "enabled": True},
-    ]
+def test_set_startup_app_state_is_read_only(mock_set_enabled, enabled):
+    """Startup management is read-only: no change may reach the registry."""
+    with pytest.raises(NotImplementedError, match="unavailable"):
+        set_startup_app_state("C:\\Test\\app.exe", enabled)
 
-    set_startup_app_state("C:\\Test\\app.exe", False)
-
-    mock_set_enabled.assert_called_once_with("TestApp", "HKCU", False)
-
-
-@patch("panther.sidecar.methods.adapters.startup_adapter.get_startup_entries")
-def test_set_startup_app_state_enable_raises_not_implemented(mock_get_entries):
-    mock_get_entries.return_value = [
-        {"name": "TestApp", "command": "C:\\Test\\app.exe", "scope": "HKCU", "enabled": False},
-    ]
-
-    with pytest.raises(NotImplementedError):
-        set_startup_app_state("C:\\Test\\app.exe", True)
-
-
-@patch("panther.sidecar.methods.adapters.startup_adapter.get_startup_entries")
-def test_set_startup_app_state_not_found_raises(mock_get_entries):
-    mock_get_entries.return_value = []
-
-    with pytest.raises(ValueError, match="not found"):
-        set_startup_app_state("nonexistent.exe", False)
+    mock_set_enabled.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

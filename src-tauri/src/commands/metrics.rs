@@ -43,6 +43,10 @@ pub async fn invoke_metric(
         );
     };
 
+    // Validate before anything is sent: only well-formed sidecar method names
+    // may cross the IPC boundary. Authorization stays in the Python sidecar.
+    validate_method(&args.method)?;
+
     // 1. Register pending request
     let (id, mut rx) = {
         let mut guard = ipc_state.lock().await;
@@ -98,8 +102,37 @@ pub async fn invoke_metric(
     }
 }
 
+/// Accept only `system_monitor.<name>` identifiers made of lowercase ASCII
+/// letters, digits and underscores, so arbitrary strings never reach the sidecar.
+fn validate_method(method: &str) -> Result<(), String> {
+    let ok = method.len() <= 96
+        && method
+            .strip_prefix("system_monitor.")
+            .map(|rest| {
+                !rest.is_empty()
+                    && rest
+                        .chars()
+                        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+            })
+            .unwrap_or(false);
+    if ok {
+        Ok(())
+    } else {
+        Err("invalid method name".to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn validate_method_accepts_registered_style_names_only() {
+        assert!(super::validate_method("system_monitor.get_cpu_percent").is_ok());
+        assert!(super::validate_method("other.get_cpu_percent").is_err());
+        assert!(super::validate_method("system_monitor.").is_err());
+        assert!(super::validate_method("system_monitor.Bad-Name").is_err());
+        assert!(super::validate_method("").is_err());
+    }
+
     use super::*;
 
     /// Guard the Tauri v2 contract: the frontend invoke.ts must pass the `args` wrapper

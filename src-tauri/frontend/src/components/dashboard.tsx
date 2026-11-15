@@ -60,7 +60,6 @@ export function Dashboard() {
   const { setCurrentScreen } = useNav();
 
   const fetchMetrics = useCallback(async () => {
-    setLoading(true);
     setError(null);
     try {
       const results = await Promise.allSettled([
@@ -131,15 +130,23 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetchMetrics();
-    fetchRecommendations();
-    fetchActivityHistory();
-    const timer = setInterval(() => {
-      fetchMetrics();
-      fetchRecommendations();
-      fetchActivityHistory();
-    }, 5000);
-    return () => clearInterval(timer);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Schedule the next poll only after the previous one finishes, so slow
+    // sidecar responses can never pile up overlapping requests.
+    const poll = async () => {
+      await Promise.allSettled([
+        fetchMetrics(),
+        fetchRecommendations(),
+        fetchActivityHistory(),
+      ]);
+      if (!cancelled) timer = setTimeout(poll, 5000);
+    };
+    poll();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [fetchMetrics, fetchRecommendations, fetchActivityHistory]);
 
   const isDark = resolvedTheme === "dark";
