@@ -22,7 +22,8 @@ All of `src/panther/services`, `domain`, `config`, `db`, `logger`, `sidecar/`, `
 - Python: `pytest tests` -> 430 passed, 1 skipped, no PySide6 installed.
 - Frontend: `tsc --noEmit` and `vite build` pass.
 - Rust: `cargo fmt --check` clean; `cargo test` 25 passed.
-- Windows: **not verified here.** Windows CI workflows are configured; check their result on GitHub.
+- Windows CI (real windows-latest runner, run 43686826820 on f70e850): all steps passed: Python deps, sidecar tests, sidecar build and frozen-binary smoke test, tsc, Vite build, cargo check/test, NSIS build, silent install, graceful-shutdown and forced-kill orphan checks, uninstall. General CI and Tauri Linux CI also passed.
+- Manual interactive launch on a developer Windows machine: not yet done.
 
 ## Incomplete
 Audit found the frontend calls only the 18 registered `system_monitor.*` methods and these agree with the sidecar. Backend services without a sidecar method or React screen: duplicate detection/review, cleanup review/execution, file metadata/signature inspection, storage analysis/scan with progress and cancellation, process priority change and adaptive-control authorization flows beyond get/set. These were not implemented and are not faked. Process and storage safety code is unchanged and still tested.
